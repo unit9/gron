@@ -68,3 +68,9 @@ within these bounds.
 All of these features are safe to be combined together.
 
 Pass `-d` to get more debug spam with nicer formatting.
+
+For things like manipulating the command's environment, dropping
+privileges, chrooting, etc. refer to the excellent utilities such as
+[`env(1)`](http://man7.org/linux/man-pages/man1/env.1.html),
+[`gosu`](https://github.com/tianon/gosu),
+[`chpst(1)`](http://smarden.org/runit/chpst.8.html), and so on.
