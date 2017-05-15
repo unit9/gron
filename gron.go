@@ -23,14 +23,20 @@ type Cron struct {
 }
 
 type CronJob struct {
-	Description string        `yaml:"description"`
-	Command     string        `yaml:"command"`
-	Minute      *int          `yaml:"minute"`
-	Hour        *int          `yaml:"hour"`
-	Day         *int          `yaml:"day"`
-	Weekday     *time.Weekday `yaml:"weekday"`
-	Lock        bool          `yaml:"lock"`
+	// What are we running anyway?
+	Description string `yaml:"description"`
+	Command     string `yaml:"command"`
 
+	// When? How often?
+	Minute  *int          `yaml:"minute"`
+	Hour    *int          `yaml:"hour"`
+	Day     *int          `yaml:"day"`
+	Weekday *time.Weekday `yaml:"weekday"`
+
+	// Do we prevent it from running again if it's already running?
+	Lock bool `yaml:"lock"`
+
+	// Private locking stuff
 	m sync.Mutex
 	x bool // must hold m to read/write
 }
