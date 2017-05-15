@@ -15,7 +15,10 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+const VERSION = "v0.2"
+
 var debug = flag.Bool("d", false, "enable debug logging")
+var version = flag.Bool("v", false, "show version and exit")
 
 var rawlog *zap.Logger
 var log *zap.SugaredLogger
@@ -179,6 +182,10 @@ func InitLogging() {
 func main() {
 	flag.Usage = Usage
 	flag.Parse()
+	if *version {
+		fmt.Printf("gron %s\n", VERSION)
+		os.Exit(0)
+	}
 	jobs := []*CronJob{}
 	InitLogging()
 	for _, arg := range flag.Args() {
