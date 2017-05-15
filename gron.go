@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/getsentry/raven-go"
 	"go.uber.org/zap"
 	"gopkg.in/yaml.v2"
 )
@@ -18,9 +19,11 @@ var debug = flag.Bool("d", false, "enable debug logging")
 
 var rawlog *zap.Logger
 var log *zap.SugaredLogger
+var sentry *raven.Client
 
 type Cron struct {
-	CronJobs []*CronJob `yaml:"cron"`
+	CronJobs []*CronJob     `yaml:"cron"`
+	Report   *ReportOptions `yaml:"report"`
 }
 
 type CronJob struct {
@@ -44,6 +47,10 @@ type CronJob struct {
 	// Private locking stuff
 	m sync.Mutex
 	x bool // must hold m to read/write
+}
+
+type ReportOptions struct {
+	SentryDSN string `yaml:"SENTRY_DSN"`
 }
 
 func Usage() {
@@ -102,7 +109,19 @@ func (j *CronJob) innerRun() {
 	}
 	wp.Close()
 	out, err := cmd.CombinedOutput()
-	log.Infow("completed", "job", j, "out", string(out), "err", err)
+	strOut := string(out)
+	log.Infow("completed", "job", j, "out", strOut, "err", err)
+	if err != nil {
+		packet := raven.NewPacket(
+			fmt.Sprintf("Job failed: %s: %s", j.Description, err.Error()),
+		)
+		packet.Extra["err"] = err.Error()
+		packet.Extra["pwd"] = j.Pwd
+		packet.Extra["command"] = j.Command
+		packet.Extra["description"] = j.Description
+		packet.Extra["out"] = strOut
+		sentry.Capture(packet, nil)
+	}
 }
 
 func (j *CronJob) Run() {
@@ -151,6 +170,10 @@ func InitLogging() {
 		panic(err)
 	}
 	log = rawlog.Sugar()
+	sentry, err = raven.New(os.Getenv("SENTRY_DSN"))
+	if err != nil {
+		panic(err)
+	}
 }
 
 func main() {
@@ -163,6 +186,9 @@ func main() {
 		if err != nil {
 			log.Fatalw("load", "error", err)
 		}
+		if c.Report != nil && c.Report.SentryDSN != "" {
+			sentry.SetDSN(c.Report.SentryDSN)
+		}
 		jobs = append(jobs, c.CronJobs...)
 	}
 	log.Infow("hello", "jobs", jobs)
@@ -172,9 +198,11 @@ func main() {
 	for {
 		log.Debugw("tick", "now", time.Now())
 		for _, j := range jobs {
-			if j.IsItTime() {
-				j.Run()
-			}
+			sentry.CapturePanic(func() {
+				if j.IsItTime() {
+					j.Run()
+				}
+			}, nil)
 		}
 		WaitUntilNextMinute()
 	}

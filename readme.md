@@ -2,6 +2,8 @@
 
 Simple cron in Go.
 
+## Usage
+
 Use with one or more `*.yml` files, formatted like so:
 
 ```yaml
@@ -74,3 +76,17 @@ privileges, chrooting, etc. refer to the excellent utilities such as
 [`env(1)`](http://man7.org/linux/man-pages/man1/env.1.html),
 [`gosu`](https://github.com/tianon/gosu),
 [`chpst(1)`](http://smarden.org/runit/chpst.8.html), and so on.
+
+## Reporting
+
+You can (optionally) report failing jobs using
+[Sentry](https://sentry.io/). The DSN can be specified by settings the
+`SENTRY_DSN` environment variable, or by adding a snippet to one of
+the config files (which takes precedence):
+
+```yaml
+report:
+  SENTRY_DSN: "https://1234:5678@sentry.io/9"
+cron:
+- description: some job ...
+```
