@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -33,6 +34,9 @@ type CronJob struct {
 	Hour    *int          `yaml:"hour"`
 	Day     *int          `yaml:"day"`
 	Weekday *time.Weekday `yaml:"weekday"`
+
+	// How long do we allow it to run?
+	Timeout *int `yaml:"timeout"`
 
 	// Do we prevent it from running again if it's already running?
 	Lock bool `yaml:"lock"`
@@ -82,7 +86,15 @@ func (j *CronJob) IsItTime() bool {
 
 func (j *CronJob) innerRun() {
 	log.Infow("running", "job", j)
-	cmd := exec.Command("/bin/sh", "-c", j.Command)
+	var cmd *exec.Cmd
+	if j.Timeout == nil {
+		cmd = exec.Command("/bin/sh", "-c", j.Command)
+	} else {
+		timeout := time.Second * time.Duration(*j.Timeout)
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+		cmd = exec.CommandContext(ctx, "/bin/sh", "-c", j.Command)
+	}
 	cmd.Dir = j.Pwd
 	wp, err := cmd.StdinPipe()
 	if err != nil {

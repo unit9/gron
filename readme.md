@@ -36,6 +36,10 @@ cron:
   command: echo task; pwd; date
   pwd: /tmp
   minute: 0
+
+- description: some minutely task with a 30s timeout
+  command: possibly-long-running-command
+  timeout: 30  # seconds
 ```
 
 Each job will run when the server's wall clock hits the exact
@@ -56,5 +60,11 @@ If `lock` is set to `yes` (default is `no`), a simple locking
 mechanism is used. While an instance of the task is still running, the
 task will not be re-run. So an hourly task, that runs for 90 minutes,
 will run 12 times per day.
+
+If you specify `timeout`, the task will be leashed to run for up to
+that many seconds, and will get a `SIGKILL` if it does not complete
+within these bounds.
+
+All of these features are safe to be combined together.
 
 Pass `-d` to get more debug spam with nicer formatting.
