@@ -115,11 +115,15 @@ func WaitUntilNextMinute() {
 	time.Sleep(then.Sub(now))
 }
 
-func InitLogging(debug bool) {
-	if debug {
-		rawlog, _ = zap.NewDevelopment()
+func InitLogging() {
+	var err error
+	if *debug {
+		rawlog, err = zap.NewDevelopment()
 	} else {
-		rawlog, _ = zap.NewProduction()
+		rawlog, err = zap.NewProduction()
+	}
+	if err != nil {
+		panic(err)
 	}
 	log = rawlog.Sugar()
 }
@@ -128,7 +132,7 @@ func main() {
 	flag.Usage = Usage
 	flag.Parse()
 	jobs := []*CronJob{}
-	InitLogging(*debug)
+	InitLogging()
 	for _, arg := range flag.Args() {
 		c, err := LoadCron(arg)
 		if err != nil {
