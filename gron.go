@@ -26,6 +26,7 @@ type CronJob struct {
 	// What are we running anyway?
 	Description string `yaml:"description"`
 	Command     string `yaml:"command"`
+	Pwd         string `yaml:"pwd"`
 
 	// When? How often?
 	Minute  *int          `yaml:"minute"`
@@ -82,6 +83,7 @@ func (j *CronJob) IsItTime() bool {
 func (j *CronJob) innerRun() {
 	log.Infow("running", "job", j)
 	cmd := exec.Command("/bin/sh", "-c", j.Command)
+	cmd.Dir = j.Pwd
 	wp, err := cmd.StdinPipe()
 	if err != nil {
 		log.Fatalw("stdinpipe", "error", err)
