@@ -76,6 +76,11 @@ func (j *CronJob) IsItTime() bool {
 func (j *CronJob) innerRun() {
 	log.Infow("running", "job", j)
 	cmd := exec.Command("/bin/sh", "-c", j.Command)
+	wp, err := cmd.StdinPipe()
+	if err != nil {
+		log.Fatalw("stdinpipe", "error", err)
+	}
+	wp.Close()
 	out, err := cmd.CombinedOutput()
 	log.Infow("completed", "job", j, "out", string(out), "err", err)
 }
